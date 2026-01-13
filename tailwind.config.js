@@ -4,7 +4,6 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      // Tutaj skopiowałem podstawowe kolory z Twojego webowego tailwind.config.js
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
