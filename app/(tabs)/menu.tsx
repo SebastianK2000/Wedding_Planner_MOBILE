@@ -33,7 +33,6 @@ export default function MenuScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState({ name: "Gość", daysLeft: 224 });
 
-  // Ładowanie danych użytkownika przy każdym wejściu na zakładkę
   useFocusEffect(
     useCallback(() => {
         const loadUser = async () => {
@@ -43,7 +42,7 @@ export default function MenuScreen() {
                     const user = JSON.parse(userStr);
                     setUserData({
                         name: user.fullname || user.email || "Anna & Tomasz",
-                        daysLeft: 224 // Tutaj w przyszłości obliczanie dni z daty ślubu
+                        daysLeft: 224
                     });
                 }
             } catch (e) {
@@ -74,9 +73,7 @@ export default function MenuScreen() {
             style: "destructive", 
             onPress: async () => {
                 try {
-                    // Czyścimy tokeny i dane
                     await AsyncStorage.multiRemove(['access_token', 'refresh_token', 'user']);
-                    // Przekierowanie do logowania (zastępując historię)
                     router.replace("/auth/login");
                 } catch (e) {
                     console.error("Błąd wylogowywania:", e);
@@ -90,7 +87,6 @@ export default function MenuScreen() {
     <SafeAreaView className="flex-1 bg-stone-50">
       <ScrollView className="flex-1">
         
-        {/* Profil Użytkownika */}
         <View className="bg-white p-6 mb-6 border-b border-stone-200 items-center">
             <View className="w-24 h-24 rounded-full bg-stone-200 mb-4 overflow-hidden border-4 border-rose-100">
                 <Image 
@@ -102,7 +98,6 @@ export default function MenuScreen() {
             <Text className="text-stone-500">Ślub za {userData.daysLeft} dni</Text>
         </View>
 
-        {/* Sekcje Menu */}
         <View className="px-4 pb-4">
             {MENU_ITEMS.map((section, idx) => (
                 <View key={idx} className="mb-6">
@@ -130,7 +125,6 @@ export default function MenuScreen() {
             ))}
         </View>
 
-        {/* Przycisk Wyloguj */}
         <View className="px-4 pb-10">
             <TouchableOpacity 
                 onPress={handleLogout}
