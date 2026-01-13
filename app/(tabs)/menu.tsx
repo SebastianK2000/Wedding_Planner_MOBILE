@@ -1,7 +1,8 @@
-import React from 'react';
-import { useRouter } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
     Settings, LogOut, ChevronRight, 
     Camera, Music, Flower, Car, Building2,
@@ -30,31 +31,58 @@ const MENU_ITEMS = [
 
 export default function MenuScreen() {
   const router = useRouter();
+  const [userData, setUserData] = useState({ name: "Gość", daysLeft: 224 });
+
+  // Ładowanie danych użytkownika przy każdym wejściu na zakładkę
+  useFocusEffect(
+    useCallback(() => {
+        const loadUser = async () => {
+            try {
+                const userStr = await AsyncStorage.getItem("user");
+                if (userStr) {
+                    const user = JSON.parse(userStr);
+                    setUserData({
+                        name: user.fullname || user.email || "Anna & Tomasz",
+                        daysLeft: 224 // Tutaj w przyszłości obliczanie dni z daty ślubu
+                    });
+                }
+            } catch (e) {
+                console.log("Błąd ładowania usera w menu", e);
+            }
+        };
+        loadUser();
+    }, [])
+  );
 
   const handlePress = (label: string) => {
-      if (label.includes("Fotograf")) {
-          router.push("/photographer");
-      } else if (label.includes("muzyczna")) {
-          router.push("/music");
-      } else if (label.includes("Florystka")) {
-          router.push("/florist");
-      } else if (label.includes("Transport")) {
-          router.push("/transport");
-      } else if (label.includes("Sale")) {
-          router.push("/venues");
-      } else if (label.includes("FAQ")) {
-          router.push("/faq");
-      } else if (label.includes("Ustawienia")) {
-          router.push("/settings");
-      } else {
-          Alert.alert("Wkrótce", `Moduł "${label}" jest w trakcie budowy!`);
-      }
+      if (label.includes("Fotograf")) router.push("/photographer");
+      else if (label.includes("muzyczna")) router.push("/music");
+      else if (label.includes("Florystka")) router.push("/florist");
+      else if (label.includes("Transport")) router.push("/transport");
+      else if (label.includes("Sale")) router.push("/venues");
+      else if (label.includes("FAQ")) router.push("/faq");
+      else if (label.includes("Ustawienia")) router.push("/settings");
+      else if (label.includes("Poradnik")) router.push("/guide");
+      else Alert.alert("Wkrótce", `Moduł "${label}" jest w trakcie budowy!`);
   };
 
   const handleLogout = () => {
       Alert.alert("Wyloguj", "Czy na pewno chcesz się wylogować?", [
           { text: "Anuluj", style: "cancel" },
-          { text: "Wyloguj", style: "destructive", onPress: () => console.log("Logout") }
+          { 
+            text: "Wyloguj", 
+            style: "destructive", 
+            onPress: async () => {
+                try {
+                    // Czyścimy tokeny i dane
+                    await AsyncStorage.multiRemove(['access_token', 'refresh_token', 'user']);
+                    // Przekierowanie do logowania (zastępując historię)
+                    router.replace("/auth/login");
+                } catch (e) {
+                    console.error("Błąd wylogowywania:", e);
+                }
+            } 
+          }
       ]);
   };
 
@@ -62,6 +90,7 @@ export default function MenuScreen() {
     <SafeAreaView className="flex-1 bg-stone-50">
       <ScrollView className="flex-1">
         
+        {/* Profil Użytkownika */}
         <View className="bg-white p-6 mb-6 border-b border-stone-200 items-center">
             <View className="w-24 h-24 rounded-full bg-stone-200 mb-4 overflow-hidden border-4 border-rose-100">
                 <Image 
@@ -69,10 +98,11 @@ export default function MenuScreen() {
                     className="w-full h-full"
                 />
             </View>
-            <Text className="text-xl font-bold text-stone-900">Anna & Tomasz</Text>
-            <Text className="text-stone-500">Ślub za 224 dni</Text>
+            <Text className="text-xl font-bold text-stone-900">{userData.name}</Text>
+            <Text className="text-stone-500">Ślub za {userData.daysLeft} dni</Text>
         </View>
 
+        {/* Sekcje Menu */}
         <View className="px-4 pb-4">
             {MENU_ITEMS.map((section, idx) => (
                 <View key={idx} className="mb-6">
@@ -100,6 +130,7 @@ export default function MenuScreen() {
             ))}
         </View>
 
+        {/* Przycisk Wyloguj */}
         <View className="px-4 pb-10">
             <TouchableOpacity 
                 onPress={handleLogout}
