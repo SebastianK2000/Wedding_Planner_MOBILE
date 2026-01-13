@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator, RefreshControl, Modal, Switch, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Plus, User } from 'lucide-react-native';
+import { Search, Plus, User, X, Save, Trash2 } from 'lucide-react-native';
 import { useFocusEffect } from 'expo-router';
 import api from '../../lib/api';
 
@@ -11,8 +11,10 @@ type Guest = {
   id: string;
   name: string;
   status: UIStatus;
+  statusId: number;
   plusOne: boolean;
   table?: string;
+  tableId?: number | null;
 };
 
 interface ApiGuest {
@@ -35,11 +37,22 @@ interface ApiTable {
 
 export default function GuestsScreen() {
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [statuses, setStatuses] = useState<ApiStatus[]>([]);
+  const [tables, setTables] = useState<ApiTable[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
   const [filter, setFilter] = useState<'all' | 'confirmed' | 'pending'>('all');
   const [search, setSearch] = useState('');
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
+
+  const [fullname, setFullname] = useState("");
+  const [selectedStatusId, setSelectedStatusId] = useState<number | null>(null);
+  const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
+  const [plusOne, setPlusOne] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -52,6 +65,9 @@ export default function GuestsScreen() {
       const apiGuests: ApiGuest[] = guestsRes.data;
       const apiStatuses: ApiStatus[] = statusesRes.data;
       const apiTables: ApiTable[] = tablesRes.data;
+
+      setStatuses(apiStatuses);
+      setTables(apiTables);
 
       const mappedGuests: Guest[] = apiGuests.map(g => {
         const statusObj = apiStatuses.find(s => s.id === g.statusid);
@@ -67,8 +83,10 @@ export default function GuestsScreen() {
           id: String(g.id),
           name: g.fullname,
           status: uiStatus,
+          statusId: g.statusid,
           plusOne: g.plusone,
-          table: tableObj ? tableObj.tablename : undefined
+          table: tableObj ? tableObj.tablename : undefined,
+          tableId: g.tableid
         };
       });
 
@@ -92,6 +110,67 @@ export default function GuestsScreen() {
     fetchData();
   };
 
+  const openAddModal = () => {
+      setEditingGuest(null);
+      setFullname("");
+      setPlusOne(false);
+      const defaultStatus = statuses.find(s => s.name.includes("Oczek")) || statuses[0];
+      setSelectedStatusId(defaultStatus?.id || 1);
+      setSelectedTableId(null);
+      setModalVisible(true);
+  };
+
+  const openEditModal = (guest: Guest) => {
+      setEditingGuest(guest);
+      setFullname(guest.name);
+      setPlusOne(guest.plusOne);
+      setSelectedStatusId(guest.statusId);
+      setSelectedTableId(guest.tableId || null);
+      setModalVisible(true);
+  };
+
+  const handleSave = async () => {
+      if (!fullname) {
+          Alert.alert("Błąd", "Podaj imię i nazwisko.");
+          return;
+      }
+
+      const payload = {
+          fullname,
+          statusid: selectedStatusId,
+          tableid: selectedTableId,
+          plusone: plusOne,
+          email: "",
+          phonenumber: "",
+          dietarypreferenceid: null
+      };
+
+      try {
+          if (editingGuest) {
+              await api.patch(`/guests/${editingGuest.id}/`, payload);
+          } else {
+              await api.post('/guests/', payload);
+          }
+          setModalVisible(false);
+          fetchData();
+      } catch (error) {
+          console.error(error);
+          Alert.alert("Błąd", "Nie udało się zapisać.");
+      }
+  };
+
+  const handleDelete = (guest: Guest) => {
+      Alert.alert("Usuń gościa", `Czy usunąć ${guest.name}?`, [
+          { text: "Anuluj", style: "cancel" },
+          { text: "Usuń", style: "destructive", onPress: async () => {
+              try {
+                  await api.delete(`/guests/${guest.id}/`);
+                  fetchData();
+              } catch(e) { Alert.alert("Błąd", "Nie udało się usunąć."); }
+          }}
+      ]);
+  };
+
   const filteredGuests = guests.filter(guest => {
     const matchesFilter = filter === 'all' || guest.status === filter;
     const matchesSearch = guest.name.toLowerCase().includes(search.toLowerCase());
@@ -102,10 +181,6 @@ export default function GuestsScreen() {
     total: guests.length,
     confirmed: guests.filter(g => g.status === 'confirmed').length,
     pending: guests.filter(g => g.status === 'pending').length,
-  };
-
-  const handleAddGuest = () => {
-    Alert.alert("Dodaj gościa", "Funkcja dodawania będzie dostępna wkrótce!");
   };
 
   if (loading) {
@@ -172,7 +247,11 @@ export default function GuestsScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <TouchableOpacity className="bg-white p-4 rounded-xl mb-3 border border-stone-100 shadow-sm flex-row justify-between items-center">
+            <TouchableOpacity 
+                onPress={() => openEditModal(item)}
+                onLongPress={() => handleDelete(item)}
+                className="bg-white p-4 rounded-xl mb-3 border border-stone-100 shadow-sm flex-row justify-between items-center active:bg-stone-50"
+            >
               <View className="flex-row items-center gap-3">
                  <View className={`w-10 h-10 rounded-full items-center justify-center ${
                      item.status === 'confirmed' ? 'bg-green-100' : 
@@ -199,11 +278,99 @@ export default function GuestsScreen() {
       </View>
 
       <TouchableOpacity 
-        onPress={handleAddGuest}
+        onPress={openAddModal}
         className="absolute bottom-6 right-6 bg-rose-600 w-14 h-14 rounded-full items-center justify-center shadow-lg shadow-rose-500/40"
       >
         <Plus color="white" size={30} />
       </TouchableOpacity>
+
+      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+            <View className="flex-1 bg-stone-50">
+                <View className="bg-white px-4 py-4 flex-row justify-between items-center border-b border-stone-200">
+                    <Text className="text-lg font-bold text-stone-900">
+                        {editingGuest ? "Edytuj gościa" : "Nowy gość"}
+                    </Text>
+                    <TouchableOpacity onPress={() => setModalVisible(false)} className="bg-stone-100 p-2 rounded-full">
+                        <X size={20} className="text-stone-600" />
+                    </TouchableOpacity>
+                </View>
+
+                <ScrollView className="p-6">
+                    <Text className="label mb-2 font-bold text-stone-600">Imię i Nazwisko</Text>
+                    <TextInput 
+                        value={fullname} onChangeText={setFullname} 
+                        className="input bg-white p-4 rounded-xl border border-stone-200 mb-6 text-lg"
+                        placeholder="np. Jan Kowalski" 
+                    />
+
+                    <View className="flex-row items-center justify-between bg-white p-4 rounded-xl border border-stone-200 mb-6">
+                        <Text className="font-bold text-stone-700 text-lg">Osoba towarzysząca</Text>
+                        <Switch 
+                            value={plusOne} onValueChange={setPlusOne} 
+                            trackColor={{ false: '#d6d3d1', true: '#e11d48' }}
+                        />
+                    </View>
+
+                    <Text className="label mb-2 font-bold text-stone-600">Status</Text>
+                    <View className="flex-row flex-wrap gap-2 mb-6">
+                        {statuses.map(s => (
+                            <TouchableOpacity
+                                key={s.id}
+                                onPress={() => setSelectedStatusId(s.id)}
+                                className={`px-4 py-2 rounded-lg border ${selectedStatusId === s.id ? 'bg-stone-800 border-stone-800' : 'bg-white border-stone-200'}`}
+                            >
+                                <Text className={selectedStatusId === s.id ? 'text-white font-bold' : 'text-stone-600'}>
+                                    {s.name}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <Text className="label mb-2 font-bold text-stone-600">Stół (Opcjonalnie)</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2 mb-8">
+                        <TouchableOpacity
+                            onPress={() => setSelectedTableId(null)}
+                            className={`px-4 py-2 rounded-lg border ${selectedTableId === null ? 'bg-stone-800 border-stone-800' : 'bg-white border-stone-200'}`}
+                        >
+                            <Text className={selectedTableId === null ? 'text-white font-bold' : 'text-stone-600'}>Brak</Text>
+                        </TouchableOpacity>
+                        {tables.map(t => (
+                            <TouchableOpacity
+                                key={t.id}
+                                onPress={() => setSelectedTableId(t.id)}
+                                className={`px-4 py-2 rounded-lg border ${selectedTableId === t.id ? 'bg-stone-800 border-stone-800' : 'bg-white border-stone-200'}`}
+                            >
+                                <Text className={selectedTableId === t.id ? 'text-white font-bold' : 'text-stone-600'}>
+                                    {t.tablename}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                    <TouchableOpacity 
+                        onPress={handleSave}
+                        className="bg-stone-900 w-full py-4 rounded-2xl flex-row items-center justify-center gap-2 shadow-lg"
+                    >
+                        <Save color="white" size={20} />
+                        <Text className="text-white font-bold text-lg">Zapisz</Text>
+                    </TouchableOpacity>
+
+                    {editingGuest && (
+                        <TouchableOpacity 
+                            onPress={() => { setModalVisible(false); handleDelete(editingGuest); }}
+                            className="mt-4 py-3 items-center"
+                        >
+                            <View className="flex-row gap-2 items-center">
+                                <Trash2 size={18} className="text-red-500" />
+                                <Text className="text-red-500 font-bold">Usuń gościa</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
+                </ScrollView>
+            </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
