@@ -4,7 +4,7 @@ import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
     Settings, LogOut, ChevronRight, 
-    Camera, Music, Flower, Car, Utensils,
+    Camera, Music, Flower, Car, Building2,
     HelpCircle, FileText
 } from 'lucide-react-native';
 
@@ -12,18 +12,16 @@ const MENU_ITEMS = [
     { 
         title: "Usługodawcy", 
         items: [
+            { icon: Building2, label: "Sale weselne", color: "text-yellow-600", bg: "bg-yellow-100" },
             { icon: Camera, label: "Fotograf / Wideo", color: "text-blue-500", bg: "bg-blue-100" },
             { icon: Music, label: "Oprawa muzyczna", color: "text-purple-500", bg: "bg-purple-100" },
             { icon: Flower, label: "Florystka / Dekoracje", color: "text-rose-500", bg: "bg-rose-100" },
             { icon: Car, label: "Transport", color: "text-orange-500", bg: "bg-orange-100" },
-            // Uwaga: Dla "Menu i Tort" nie utworzyliśmy jeszcze dedykowanego pliku, więc zostawiamy alert "Wkrótce" lub możesz dodać pusty plik food.tsx
-            { icon: Utensils, label: "Menu i Tort", color: "text-yellow-600", bg: "bg-yellow-100" },
         ]
     },
     {
         title: "Aplikacja",
         items: [
-            { icon: FileText, label: "Poradnik ślubny", color: "text-stone-600", bg: "bg-stone-100" },
             { icon: HelpCircle, label: "Pomoc i FAQ", color: "text-stone-600", bg: "bg-stone-100" },
             { icon: Settings, label: "Ustawienia konta", color: "text-stone-600", bg: "bg-stone-100" },
         ]
@@ -34,7 +32,6 @@ export default function MenuScreen() {
   const router = useRouter();
 
   const handlePress = (label: string) => {
-      // Prosta logika dopasowania etykiety do ścieżki
       if (label.includes("Fotograf")) {
           router.push("/photographer");
       } else if (label.includes("muzyczna")) {
@@ -43,8 +40,8 @@ export default function MenuScreen() {
           router.push("/florist");
       } else if (label.includes("Transport")) {
           router.push("/transport");
-      } else if (label.includes("Poradnik")) {
-          router.push("/guide");
+      } else if (label.includes("Sale")) {
+          router.push("/venues");
       } else if (label.includes("FAQ")) {
           router.push("/faq");
       } else if (label.includes("Ustawienia")) {
@@ -65,7 +62,6 @@ export default function MenuScreen() {
     <SafeAreaView className="flex-1 bg-stone-50">
       <ScrollView className="flex-1">
         
-        {/* Profil Użytkownika */}
         <View className="bg-white p-6 mb-6 border-b border-stone-200 items-center">
             <View className="w-24 h-24 rounded-full bg-stone-200 mb-4 overflow-hidden border-4 border-rose-100">
                 <Image 
@@ -77,7 +73,6 @@ export default function MenuScreen() {
             <Text className="text-stone-500">Ślub za 224 dni</Text>
         </View>
 
-        {/* Sekcje Menu */}
         <View className="px-4 pb-4">
             {MENU_ITEMS.map((section, idx) => (
                 <View key={idx} className="mb-6">
@@ -105,7 +100,6 @@ export default function MenuScreen() {
             ))}
         </View>
 
-        {/* Przycisk Wyloguj */}
         <View className="px-4 pb-10">
             <TouchableOpacity 
                 onPress={handleLogout}
