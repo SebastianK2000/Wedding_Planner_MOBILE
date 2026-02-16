@@ -1,43 +1,46 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter, Link } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Mail, Lock, ArrowRight } from 'lucide-react-native';
+import { User, Lock, ArrowRight } from 'lucide-react-native';
 import api from '../../lib/api';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-        Alert.alert("Błąd", "Wprowadź email i hasło.");
-        return;
+    if (!username || !password) {
+      Alert.alert("Błąd", "Wprowadź nazwę użytkownika i hasło.");
+      return;
     }
 
     setLoading(true);
     try {
-        const response = await api.post('/login/', { email, password });
-        
-        const { access, refresh, user } = response.data;
+      const response = await api.post('token/', { 
+        username: username, 
+        password: password 
+      });
+      
+      const { access, refresh } = response.data;
 
-        await AsyncStorage.multiSet([
-            ['access_token', access],
-            ['refresh_token', refresh],
-            ['user', JSON.stringify(user)]
-        ]);
+      await SecureStore.setItemAsync('userToken', access);
+      if (refresh) {
+        await SecureStore.setItemAsync('refreshToken', refresh);
+      }
 
-        router.replace('/(tabs)');
-        
+      Alert.alert("Sukces", "Zalogowano pomyślnie!");
+      router.replace('/(tabs)');
+      
     } catch (error: any) {
-        console.error(error);
-        const msg = error.response?.data?.error || "Nieprawidłowe dane logowania.";
-        Alert.alert("Błąd logowania", msg);
+      console.error(error);
+      const msg = error.response?.data?.detail || "Nieprawidłowe dane logowania.";
+      Alert.alert("Błąd logowania", msg);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -46,7 +49,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1"
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} bounces={false}>
         <View className="flex-1 bg-white">
           <View className="h-[40%] w-full relative">
              <Image 
@@ -62,22 +65,22 @@ export default function LoginScreen() {
              <Text className="text-stone-500 text-center mb-10">Zaloguj się, aby planować swój dzień.</Text>
 
              <View className="space-y-4">
-                <View className="flex-row items-center border border-stone-200 rounded-2xl px-4 py-3 bg-stone-50">
-                    <Mail size={20} className="text-stone-400 mr-3" />
+                <View className="flex-row items-center border border-stone-200 rounded-2xl px-4 py-3 bg-stone-50 mb-4">
+                    <User size={20} color="#a8a29e" style={{ marginRight: 12 }} />
                     <TextInput 
-                        placeholder="Adres e-mail"
-                        className="flex-1 text-stone-800 text-base"
+                        placeholder="Nazwa użytkownika"
+                        className="flex-1 text-stone-800 text-base py-1"
                         autoCapitalize="none"
-                        value={email}
-                        onChangeText={setEmail}
+                        value={username}
+                        onChangeText={setUsername}
                     />
                 </View>
 
-                <View className="flex-row items-center border border-stone-200 rounded-2xl px-4 py-3 bg-stone-50">
-                    <Lock size={20} className="text-stone-400 mr-3" />
+                <View className="flex-row items-center border border-stone-200 rounded-2xl px-4 py-3 bg-stone-50 mb-6">
+                    <Lock size={20} color="#a8a29e" style={{ marginRight: 12 }} />
                     <TextInput 
                         placeholder="Hasło"
-                        className="flex-1 text-stone-800 text-base"
+                        className="flex-1 text-stone-800 text-base py-1"
                         secureTextEntry
                         value={password}
                         onChangeText={setPassword}
@@ -87,7 +90,7 @@ export default function LoginScreen() {
                 <TouchableOpacity 
                     onPress={handleLogin}
                     disabled={loading}
-                    className="bg-rose-600 rounded-2xl py-4 flex-row justify-center items-center shadow-lg shadow-rose-500/30 mt-4"
+                    className={`bg-rose-600 rounded-2xl py-4 flex-row justify-center items-center shadow-lg mt-4 ${loading ? 'opacity-70' : ''}`}
                 >
                     {loading ? (
                         <ActivityIndicator color="white" />
@@ -100,7 +103,7 @@ export default function LoginScreen() {
                 </TouchableOpacity>
              </View>
 
-             <View className="flex-row justify-center mt-8">
+             <View className="flex-row justify-center mt-8 pb-10">
                 <Text className="text-stone-500">Nie masz konta? </Text>
                 <Link href="/auth/register" asChild>
                     <TouchableOpacity>
