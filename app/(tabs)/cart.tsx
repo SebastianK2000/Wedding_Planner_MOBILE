@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, Alert, SafeAreaView, ActivityIndicator } from 'react-native';
-import { useCart, CartItem } from '../context/cart_context';
+import { useCart, CartItem } from '../../context/cart_context';
 import { Trash2, CreditCard, CheckCircle2, Lock, Loader2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import api from '../lib/api';
+import api from '../../lib/api';
 
 const BUDGET_CATEGORY_MAP: Record<string, number> = {
   venue: 1,
@@ -19,7 +19,7 @@ export default function CartScreen() {
   const [paymentStep, setPaymentStep] = useState(0);
   const router = useRouter();
 
-  const handleCheckout = async () => {
+const handleCheckout = async () => {
     if (items.length === 0) return;
 
     setIsPaying(true);
@@ -30,14 +30,14 @@ export default function CartScreen() {
     setTimeout(async () => {
       try {
         const promises = items.map(item => {
-            const categoryId = BUDGET_CATEGORY_MAP[item.type] || 8;
+            const safeName = item.name ? String(item.name) : `Usługa weselna (${item.type})`;
+            const safePrice = item.price ? Number(item.price) : 0;
+            
             return api.post('/budget-items/', {
-                categoryid: categoryId,
-                name: item.name,
-                plannedamount: item.price,
-                actualamount: item.price,
-                ispaid: true,
-                notes: "Zakupione w aplikacji mobilnej"
+                name: safeName,
+                plannedamount: safePrice,
+                actualamount: safePrice,
+                ispaid: true
             });
         });
 
@@ -52,10 +52,14 @@ export default function CartScreen() {
             ]);
         }, 1000);
 
-      } catch (error) {
-        console.error(error);
+      } catch (error: any) {
+        console.error("Błąd zapisu do budżetu:", error.response?.data || error.message);
+        
         setIsPaying(false);
-        Alert.alert("Błąd", "Wystąpił problem z zapisem do budżetu, ale płatność symulowana przeszła.");
+        Alert.alert(
+            "Błąd zapisu", 
+            JSON.stringify(error.response?.data || "Sprawdź logi serwera")
+        );
       }
     }, 3500);
   };

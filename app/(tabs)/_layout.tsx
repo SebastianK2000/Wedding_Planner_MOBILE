@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { House, Banknote, CalendarClock, Users, Menu } from 'lucide-react-native';
+import { House, Banknote, CalendarClock, Users, Menu, ShoppingBag } from 'lucide-react-native';
 
 export default function TabsLayout() {
   return (
@@ -44,6 +44,13 @@ export default function TabsLayout() {
         options={{
           title: 'Goście',
           tabBarIcon: ({ color }) => <Users size={24} color={color} />,
+        }}
+      />
+            <Tabs.Screen
+        name="cart"
+        options={{
+          title: 'Koszyk',
+          tabBarIcon: ({ color }) => <ShoppingBag color={color} size={24} />,
         }}
       />
       <Tabs.Screen

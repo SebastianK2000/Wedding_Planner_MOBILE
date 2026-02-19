@@ -152,14 +152,6 @@ export default function VenueListScreen() {
   return (
     <SafeAreaView className="flex-1 bg-stone-50">
       <View className="px-5 pb-4 bg-white border-b border-stone-200">
-         <View className="flex-row items-center justify-between mb-4">
-            <TouchableOpacity onPress={() => router.back()} className="w-10 h-10 bg-stone-100 rounded-full items-center justify-center">
-                <ArrowLeft size={20} className="text-stone-600" />
-            </TouchableOpacity>
-            <Text className="text-lg font-bold text-stone-900">Sale Weselne</Text>
-            <View className="w-10" />
-         </View>
-
          <View className="flex-row gap-3">
             <View className="flex-1 flex-row items-center bg-stone-100 px-3 h-12 rounded-xl">
                 <Search size={20} className="text-stone-400 mr-2" />

@@ -1,14 +1,41 @@
 import "../global.css";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
+import { useEffect } from "react";
+import * as SecureStore from 'expo-secure-store';
 import { CartProvider } from "../context/cart_context";
 
 export default function Layout() {
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('userToken');
+        const inAuthGroup = segments[0] === 'auth';
+
+        if (!token && !inAuthGroup) {
+          router.replace('/auth/login');
+        } else if (token && inAuthGroup) {
+          router.replace('/(tabs)');
+        }
+      } catch (e) {
+        console.error("Błąd podczas sprawdzania sesji:", e);
+      }
+    };
+    
+    if (segments.length > 0) {
+      checkAuth();
+    }
+  }, [segments]);
+
   return (
     <CartProvider>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
         
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+
         <Stack.Screen name="venues/index" options={{ title: 'Sale Weselne' }} />
         <Stack.Screen name="venues/[id]" options={{ title: 'Szczegóły Sali' }} />
         
@@ -24,15 +51,6 @@ export default function Layout() {
         <Stack.Screen name="transport/index" options={{ title: 'Transport' }} />
         <Stack.Screen name="transport/[id]" options={{ title: 'Szczegóły Transportu' }} />
 
-        <Stack.Screen 
-          name="cart" 
-          options={{ 
-            presentation: 'modal', 
-            title: 'Twój Koszyk',
-            headerShown: true 
-          }} 
-        />
-        
         <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
     </CartProvider>
