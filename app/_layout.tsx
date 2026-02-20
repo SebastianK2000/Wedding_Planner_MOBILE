@@ -5,29 +5,6 @@ import * as SecureStore from 'expo-secure-store';
 import { CartProvider } from "../context/cart_context";
 
 export default function Layout() {
-  const segments = useSegments();
-  const router = useRouter();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = await SecureStore.getItemAsync('userToken');
-        const inAuthGroup = segments[0] === 'auth';
-
-        if (!token && !inAuthGroup) {
-          router.replace('/auth/login');
-        } else if (token && inAuthGroup) {
-          router.replace('/(tabs)');
-        }
-      } catch (e) {
-        console.error("Błąd podczas sprawdzania sesji:", e);
-      }
-    };
-    
-    if (segments.length > 0) {
-      checkAuth();
-    }
-  }, [segments]);
 
   return (
     <CartProvider>

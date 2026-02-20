@@ -14,7 +14,6 @@ import {
   Heart
 } from "lucide-react-native";
 import api from "../../lib/api"; 
-
 interface ApiHomeSection {
   id: number;
   sectionkey: string;
