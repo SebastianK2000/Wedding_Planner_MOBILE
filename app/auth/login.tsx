@@ -12,8 +12,6 @@ import {
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
-// Upewnij się, że ścieżka do api jest poprawna. 
-// Jeśli ten plik jest w app/auth/, to wyjście dwa poziomy w górę (../../) powinno prowadzić do głównego folderu.
 import api from '../../lib/api'; 
 
 export default function LoginScreen() {
@@ -24,7 +22,6 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    // Prosta walidacja
     if (!email || !password) {
       Alert.alert('Błąd', 'Proszę podać email i hasło');
       return;
@@ -33,7 +30,6 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // 1. Wysłanie zapytania do backendu (na poprawny endpoint /login/)
       const response = await api.post('/login/', { 
         email: email, 
         password: password 
@@ -41,21 +37,17 @@ export default function LoginScreen() {
 
       const { access, refresh } = response.data;
 
-      // 2. Zapisanie tokena w bezpiecznym magazynie urządzenia
-      // To jest kluczowe, aby api.ts mogło potem dołączać ten token do zapytań o budżet itp.
       await SecureStore.setItemAsync('userToken', access);
       
       if (refresh) {
         await SecureStore.setItemAsync('refreshToken', refresh);
       }
       
-      // 3. Przekierowanie do głównej aplikacji (zakładek)
       router.replace('/(tabs)'); 
 
     } catch (error: any) {
       console.error("Login error:", error);
       
-      // Obsługa błędów z backendu
       const msg = error.response?.data?.error || "Wystąpił błąd połączenia z serwerem.";
       
       if (error.response?.status === 401) {
@@ -142,13 +134,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1c1917', // stone-900
+    color: '#1c1917',
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#78716c', // stone-500
+    color: '#78716c',
     marginBottom: 32,
     textAlign: 'center',
   },
@@ -158,20 +150,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#44403c', // stone-700
+    color: '#44403c',
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#fafaf9', // stone-50
+    backgroundColor: '#fafaf9',
     borderWidth: 1,
-    borderColor: '#e7e5e4', // stone-200
+    borderColor: '#e7e5e4',
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
     color: '#1c1917',
   },
   button: {
-    backgroundColor: '#e11d48', // rose-600
+    backgroundColor: '#e11d48',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -193,7 +185,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   linkText: {
-    color: '#57534e', // stone-600
+    color: '#57534e',
     fontSize: 14,
   }
 });

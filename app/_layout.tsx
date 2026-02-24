@@ -1,7 +1,5 @@
 import "../global.css";
-import { Stack, useRouter, useSegments } from "expo-router";
-import { useEffect } from "react";
-import * as SecureStore from 'expo-secure-store';
+import { Stack } from "expo-router";
 import { CartProvider } from "../context/cart_context";
 
 export default function Layout() {
